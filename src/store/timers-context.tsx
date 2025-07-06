@@ -1,6 +1,6 @@
-import { createContext, ReactNode, useContext } from "react";
+import { createContext, ReactNode, useContext, useReducer } from "react";
 
-type Timer = {
+export type Timer = {
     name: string;
     duration: number;
 }
@@ -8,6 +8,11 @@ type Timer = {
 type TimersState = {
     isRunning: boolean;
     timers: Timer[];
+}
+
+const inititalState: TimersState = {
+    isRunning: false,
+    timers: []
 }
 
 type TimersContextValue = TimersState & {
@@ -26,7 +31,7 @@ export function useTimersContext() {
     const timersContext = useContext(TimersContext)
 
     if (timersContext === null) {
-        throw new Error('Timers Context is null - that should not be the case');
+        throw new Error('Timers Context is null - TimersContext must be used inside the TimersContextProvider');
     }
 
     return timersContext;
@@ -39,20 +44,73 @@ type TimersContextProviderProps = {
     children: ReactNode
 }
 
+type StartTimersAction = {
+    type: 'START_TIMERS'
+}
+
+type StopTimersAction = {
+    type: 'STOP_TIMERS'
+}
+
+type AddTimersAction = {
+    type: 'ADD_TIMER',
+    payload: Timer // if types not seperated out like this, payload will have to be optional and we will keep having to convinve ts that payload is not null
+}
+
+type Action = StartTimersAction | StopTimersAction | AddTimersAction // union type
+
+// 1st arg - the accumulator. current state before latest action was processed
+// 2nd arg - action. commonly objects - says an action and some data belonging to the action
+function timersReducer(state: TimersState, action: Action): TimersState {
+    if (action.type === 'START_TIMERS') {
+        return {
+            ...state, // copy old state - don't lose data we are not changing
+            isRunning: true
+        }
+        // should not manipulate the state directly
+        // e.g. state.isRunning = true
+        // always produce a new state
+    }
+
+    if (action.type === 'STOP_TIMERS') {
+        return {
+            ...state,
+            isRunning: false
+        }
+    }
+
+    if (action.type === 'ADD_TIMER') {
+        return {
+            ...state,
+            timers: [...state.timers, 
+                    { name: action.payload.name, duration: action.payload.duration}]
+        }
+    }
+
+    return state;
+}
+
 function TimersContextProvider(props: TimersContextProviderProps) {
     const { children } = props;
 
+    // useReducer returns an arr of 2 elems
+    // 1. current state managed by useReducer (like the accumulator in normal js reducers)
+    // 2. a dispatch fn - allows us to send 'messages' that will cause a state change
+    const [timersState, dispatch] = useReducer(timersReducer, inititalState);
+
+    // reducer - fn called when we 'dispatch' an action
+
     const ctx: TimersContextValue = {
-        timers: [],
-        isRunning: false,
+        timers: timersState.timers,
+        isRunning: timersState.isRunning,
         addTimer(timerData) {
-            // ...
+            dispatch({type: 'ADD_TIMER', payload: timerData});
         },
         startTimers() {
-            // ...
+            dispatch({type: 'START_TIMERS'});
         },
         stopTimers() {
-            // ...
+            dispatch({type: 'STOP_TIMERS'});
         }
     }
 
