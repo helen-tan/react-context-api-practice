@@ -11,7 +11,7 @@ type TimersState = {
 }
 
 const inititalState: TimersState = {
-    isRunning: true,
+    isRunning: false,
     timers: []
 }
 
