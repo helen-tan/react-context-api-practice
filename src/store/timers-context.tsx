@@ -1,4 +1,4 @@
-import { createContext, ReactNode } from "react";
+import { createContext, ReactNode, useContext } from "react";
 
 type Timer = {
     name: string;
@@ -18,7 +18,19 @@ type TimersContextValue = TimersState & {
 
 // Eventually, the contaxt TimersContext will manage the object TimersContextValue
 // which contains the state values in TimersState
-const TimersContext = createContext<TimersContextValue | null>(null);
+export const TimersContext = createContext<TimersContextValue | null>(null);
+
+// custom hook - fn that must only be called inside a component function
+// Do this so that every component calling this context don't have to check for null
+export function useTimersContext() {
+    const timersContext = useContext(TimersContext)
+
+    if (timersContext === null) {
+        throw new Error('Timers Context is null - that should not be the case');
+    }
+
+    return timersContext;
+}
 
 // * Context Providers - fn responsible for:
 // - managing state & functions in this context
